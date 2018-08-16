@@ -153,6 +153,14 @@ func StreamingFlushInterval(flushInterval time.Duration) optSetter {
 	}
 }
 
+// WebSocketNetDial allows customization of the dial function for websockets.
+func WebSocketNetDial(netDial func(network, addr string) (net.Conn, error)) optSetter {
+	return func(f *Forwarder) error {
+		f.httpForwarder.websocketNetDial = netDial
+		return nil
+	}
+}
+
 // ErrorHandlingRoundTripper a error handling round tripper
 type ErrorHandlingRoundTripper struct {
 	http.RoundTripper
@@ -201,6 +209,7 @@ type httpForwarder struct {
 
 	bufferPool                    httputil.BufferPool
 	websocketConnectionClosedHook func(req *http.Request, conn net.Conn)
+	websocketNetDial              func(network, addr string) (net.Conn, error)
 }
 
 const defaultFlushInterval = time.Duration(100) * time.Millisecond
@@ -338,6 +347,9 @@ func (f *httpForwarder) serveWebSocket(w http.ResponseWriter, req *http.Request,
 	outReq := f.copyWebSocketRequest(req)
 
 	dialer := websocket.DefaultDialer
+	if f.websocketNetDial != nil {
+		dialer.NetDial = f.websocketNetDial
+	}
 
 	if outReq.URL.Scheme == "wss" && f.tlsClientConfig != nil {
 		dialer.TLSClientConfig = f.tlsClientConfig.Clone()
