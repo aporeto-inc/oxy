@@ -6,6 +6,8 @@ PKGS := $(shell go list ./... | grep -v '/vendor/')
 GOFILES := $(shell go list -f '{{range $$index, $$element := .GoFiles}}{{$$.Dir}}/{{$$element}}{{"\n"}}{{end}}' ./... | grep -v '/vendor/')
 TXT_FILES := $(shell find * -type f -not -path 'vendor/**')
 
+ci:
+
 default: clean misspell vet check-fmt test
 
 test: clean
