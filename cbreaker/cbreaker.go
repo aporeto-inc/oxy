@@ -32,7 +32,7 @@ import (
 	"time"
 
 	"github.com/mailgun/timetools"
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	"github.com/aporeto-inc/oxy/memmetrics"
 	"github.com/aporeto-inc/oxy/utils"
 )

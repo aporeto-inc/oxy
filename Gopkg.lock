@@ -83,7 +83,7 @@
 
 [[projects]]
   digest = "1:3ac248add5bb40a3c631c5334adcd09aa72d15af2768a5bc0274084ea7b2e5ba"
-  name = "github.com/Sirupsen/logrus"
+  name = "github.com/sirupsen/logrus"
   packages = ["."]
   pruneopts = ""
   revision = "f006c2ac4710855cf0f916dd6b77acf6b048dc6e"
@@ -158,7 +158,7 @@
     "github.com/mailgun/multibuf",
     "github.com/mailgun/timetools",
     "github.com/mailgun/ttlmap",
-    "github.com/Sirupsen/logrus",
+    "github.com/sirupsen/logrus",
     "github.com/stretchr/testify/assert",
     "github.com/stretchr/testify/require",
     "github.com/vulcand/predicate",

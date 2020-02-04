@@ -45,7 +45,7 @@ import (
 	"reflect"
 
 	"github.com/mailgun/multibuf"
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	"github.com/aporeto-inc/oxy/utils"
 )
 
