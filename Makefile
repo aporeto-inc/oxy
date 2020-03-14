@@ -5,7 +5,7 @@ GOFILES := $(shell go list -f '{{range $$index, $$element := .GoFiles}}{{$$.Dir}
 TXT_FILES := $(shell find * -type f -not -path 'vendor/**')
 
 # Until we support go.mod properly
-export GO111MODULE = on
+export GO111MODULE = auto
 
 ci:
 
