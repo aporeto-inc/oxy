@@ -3,6 +3,7 @@ package forward
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -383,4 +384,51 @@ func TestContextWithValueInErrHandler(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusBadGateway, re.StatusCode)
 	assert.True(t, *originalPBool)
+}
+
+func TestTeTrailer(t *testing.T) {
+	var teHeader string
+	srv := testutils.NewHandler(func(w http.ResponseWriter, req *http.Request) {
+		teHeader = req.Header.Get(Te)
+		w.Write([]byte("hello"))
+	})
+	defer srv.Close()
+
+	f, err := New()
+	require.NoError(t, err)
+
+	proxy := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		req.URL = testutils.ParseURI(srv.URL)
+		f.ServeHTTP(w, req)
+	})
+	tproxy := httptest.NewUnstartedServer(proxy)
+	tproxy.StartTLS()
+	defer tproxy.Close()
+
+	re, _, err := testutils.Get(tproxy.URL, testutils.Header("Te", "trailers"))
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, re.StatusCode)
+	assert.Equal(t, "trailers", teHeader)
+}
+
+func TestUnannouncedTrailer(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		rw.WriteHeader(200)
+		rw.(http.Flusher).Flush()
+
+		rw.Header().Add(http.TrailerPrefix+"X-Trailer", "foo")
+	}))
+
+	proxy, err := New()
+	require.Nil(t, err)
+
+	proxySrv := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		req.URL = testutils.ParseURI(srv.URL)
+		proxy.ServeHTTP(rw, req)
+	}))
+
+	resp, _ := http.Get(proxySrv.URL)
+	ioutil.ReadAll(resp.Body)
+
+	require.Equal(t, resp.Trailer.Get("X-Trailer"), "foo")
 }
