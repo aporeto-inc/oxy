@@ -436,13 +436,11 @@ func (f *httpForwarder) serveWebSocket(w http.ResponseWriter, req *http.Request,
 			if err := forward(websocket.PongMessage, bytes.NewReader([]byte(data))); err != nil {
 				return err
 			}
-			fmt.Println("resetting deadline: pong")
 			return src.SetReadDeadline(time.Now().Add(f.websocketPongWait))
 		})
 
 		for {
 
-			fmt.Println("resetting deadline: message")
 			src.SetReadDeadline(time.Now().Add(f.websocketPongWait))
 
 			msgType, reader, err := src.NextReader()
