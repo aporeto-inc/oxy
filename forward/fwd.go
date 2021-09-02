@@ -89,6 +89,15 @@ func WebsocketNetDialContext(dialContext func(ctx context.Context, network strin
 	}
 }
 
+// WebsocketPongWait sets the max time to wait for a pong
+// before closing the connection.
+func WebsocketPongWait(wait time.Duration) optSetter {
+	return func(f *Forwarder) error {
+		f.httpForwarder.websocketPongWait = wait
+		return nil
+	}
+}
+
 // ErrorHandler is a functional argument that sets error handler of the server
 func ErrorHandler(h utils.ErrorHandler) optSetter {
 	return func(f *Forwarder) error {
@@ -202,6 +211,7 @@ type httpForwarder struct {
 	bufferPool                    httputil.BufferPool
 	websocketConnectionClosedHook func(req *http.Request, conn net.Conn)
 	websocketDialer               *websocket.Dialer
+	websocketPongWait             time.Duration
 }
 
 const defaultFlushInterval = time.Duration(100) * time.Millisecond
@@ -218,7 +228,10 @@ type UrlForwardingStateListener func(*url.URL, int)
 // New creates an instance of Forwarder based on the provided list of configuration options
 func New(setters ...optSetter) (*Forwarder, error) {
 	f := &Forwarder{
-		httpForwarder:  &httpForwarder{log: &internalLogger{Logger: log.StandardLogger()}},
+		httpForwarder: &httpForwarder{
+			log:               &internalLogger{Logger: log.StandardLogger()},
+			websocketPongWait: 30 * time.Second,
+		},
 		handlerContext: &handlerContext{},
 	}
 
@@ -420,10 +433,16 @@ func (f *httpForwarder) serveWebSocket(w http.ResponseWriter, req *http.Request,
 		})
 
 		src.SetPongHandler(func(data string) error {
-			return forward(websocket.PongMessage, bytes.NewReader([]byte(data)))
+			if err := forward(websocket.PongMessage, bytes.NewReader([]byte(data))); err != nil {
+				return err
+			}
+			return src.SetReadDeadline(time.Now().Add(f.websocketPongWait))
 		})
 
 		for {
+
+			src.SetReadDeadline(time.Now().Add(f.websocketPongWait))
+
 			msgType, reader, err := src.NextReader()
 
 			if err != nil {
