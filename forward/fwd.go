@@ -429,7 +429,10 @@ func (f *httpForwarder) serveWebSocket(w http.ResponseWriter, req *http.Request,
 		}
 
 		src.SetPingHandler(func(data string) error {
-			return forward(websocket.PingMessage, bytes.NewReader([]byte(data)))
+			if err := forward(websocket.PingMessage, bytes.NewReader([]byte(data))); err != nil {
+				return err
+			}
+			return src.SetReadDeadline(time.Now().Add(f.websocketPongWait))
 		})
 
 		src.SetPongHandler(func(data string) error {
